@@ -629,8 +629,9 @@ class IcmpHelperLibrary:
             # we should be confirming values are correct, such as identifier and sequence number and data
 
         # Print statistics requested.
-        print("\n  \t-- %s Ping Statistics --\n %d packets transmitted, %d received, Loss=%d%s  "
-              "\n RTT MIN=%.0f ms   RTT MAX=%.0f ms    RTT AVG=%.0f ms  "
+        print("\n  \t-- %s Ping Statistics --\n%d packets transmitted, %d received, Loss=%d%s  "
+              "\nApproximate round trip times (RTT) in milli-seconds:"
+              "\nMIN=%.0f ms   MAX=%.0f ms    AVG=%.0f ms  "
                 %
               (
                 host,
