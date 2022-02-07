@@ -69,7 +69,7 @@ class IcmpHelperLibrary:
         __packetChecksum = 0  # Valid values are 0-65535 (unsigned short, 16 bits)
         __packetIdentifier = 0  # Valid values are 0-65535 (unsigned short, 16 bits)
         __packetSequenceNumber = 0  # Valid values are 0-65535 (unsigned short, 16 bits)
-        __ipTimeout = 30
+        __ipTimeout = 5
         __ttl = 255  # Time to live
 
         __DEBUG_IcmpPacket = False  # Allows for debug output
@@ -199,12 +199,16 @@ class IcmpHelperLibrary:
                                         self.getPacketSequenceNumber()  # 16 bits / 2 bytes / Format code H
                                         )
 
+        # SOURCE: https://edstem.org/us/courses/16852/discussion/1093295
+        # Accessed: 2/6/22
         def __encodeData(self):
             data_time = struct.pack("d", time.time())  # Used to track overall round trip time
             # time.time() creates a 64 bit value of 8 bytes
             dataRawEncoded = self.getDataRaw().encode("utf-8")
 
             self.__data = data_time + dataRawEncoded
+
+            return
 
         def __packAndRecalculateChecksum(self):
             # Checksum is calculated with the following sequence to confirm data in up to date
@@ -213,6 +217,8 @@ class IcmpHelperLibrary:
             self.__encodeData()
             self.__recalculateChecksum()  # Result will set new checksum value
             self.__packHeader()  # Header is rebuilt to include new checksum value
+
+            return
 
         def __validateIcmpReplyPacketWithOriginalPingData(self, icmpReplyPacket):
             # Hint: Work through comparing each value and identify if this is a valid response.
@@ -274,7 +280,7 @@ class IcmpHelperLibrary:
             mySocket.setsockopt(IPPROTO_IP, IP_TTL, struct.pack('I', self.getTtl()))  # Unsigned int - 4 bytes
             try:
                 mySocket.sendto(b''.join([self.__header, self.__data]), (self.__destinationIpAddress, 0))
-                timeLeft = 30
+                timeLeft = 5
                 pingStartTime = time.time()
                 startedSelect = time.time()
                 whatReady = select.select([mySocket], [], [], timeLeft)
@@ -545,13 +551,15 @@ class IcmpHelperLibrary:
             timeSent = struct.unpack("d", self.__recvPacket[28:28 + bytes])[0]
             rttList.append((timeReceived - timeSent) * 1000)
 
+
             # Print contents
-            print("  TTL=%d    RTT=%.0f ms    Type=%d    Code=%d        Identifier=%d    Sequence Number=%d    %s" %
+            print("  TTL=%d    RTT=%.0f ms    Type=%d    Code=%d    Bytes=%d     Identifier=%d    Sequence Number=%d    %s" %
                   (
                       ttl,
                       (timeReceived - timeSent) * 1000,
                       returnedValues.getIcmpType(),
                       returnedValues.getIcmpCode(),
+                      len(returnedValues.getIcmpData().encode("utf-8")),
                       returnedValues.getIcmpIdentifier(),
                       returnedValues.getIcmpSequenceNumber(),
                       addr[0]
@@ -617,7 +625,8 @@ class IcmpHelperLibrary:
             icmpPacket.setIcmpTarget(host)
 
             # Send rttList as parameter to append RTT to do calculations at the end
-            print("Pinging (" + host + ") " + icmpPacket.getDestinationAddress())
+            print("Pinging (" + host + ") " + icmpPacket.getDestinationAddress() + ' with '
+                  + str(len(icmpPacket.getDataRaw().encode("utf-8"))) + ' bytes of data')
 
             returnPrintTupple = icmpPacket.sendEchoRequest(rttList, packetLossList)  # Build IP
 
@@ -731,11 +740,12 @@ def main():
     # Choose one of the following by uncommenting out the line
     # icmpHelperPing.sendPing("209.233.126.254")
     # icmpHelperPing.sendPing("46.248.187.100")
-    icmpHelperPing.sendPing("oregonstate.edu")
+    # icmpHelperPing.sendPing("oregonstate.edu")
     # icmpHelperPing.sendPing("gaia.cs.umass.edu")
     # icmpHelperPing.traceRoute("google.com")
-    # icmpHelperPing.traceRoute("oregonstate.edu")
+    icmpHelperPing.traceRoute("51.158.22.211")
     # icmpHelperPing.traceRoute("gaia.cs.umass.edu")
+    # icmpHelperPing.traceRoute("131.255.7.26")
 
 
 if __name__ == "__main__":
